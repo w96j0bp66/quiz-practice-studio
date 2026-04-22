@@ -1067,6 +1067,19 @@
         throw new Error("找不到題目。請確認格式類似：**1.** 題目文字 + 選項 - (A) ...");
       }
 
+      const questionIdCount = new Map();
+      for (const question of questions) {
+        questionIdCount.set(question.id, (questionIdCount.get(question.id) || 0) + 1);
+      }
+      const duplicatedQuestionIds = Array.from(questionIdCount.entries())
+        .filter((entry) => entry[1] > 1)
+        .map((entry) => entry[0])
+        .sort((a, b) => a - b);
+      if (duplicatedQuestionIds.length > 0) {
+        const show = duplicatedQuestionIds.slice(0, 12).join(", ");
+        throw new Error(`題庫含有重複題號：${show}${duplicatedQuestionIds.length > 12 ? "..." : ""}。請確保每題題號唯一。`);
+      }
+
       const answers = parseAnswers(text);
       if (answers.size === 0) {
         throw new Error("找不到答案。請在檔案中提供答案區（如表格或 1. B 這種格式）。");
