@@ -112,6 +112,7 @@
       border: 1px solid transparent;
       border-radius: 10px;
       padding: 9px 14px;
+      min-height: 44px;
       font-size: 0.95rem;
       cursor: pointer;
       transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
@@ -228,6 +229,7 @@
       border: 1px solid #d9deeb;
       border-radius: 10px;
       padding: 10px 12px;
+      min-height: 44px;
       display: flex;
       gap: 8px;
       align-items: flex-start;
@@ -242,6 +244,40 @@
 
     .option input {
       margin-top: 2px;
+    }
+
+    .option.option-correct {
+      border-color: #77cf95;
+      background: #edf9f1;
+      color: #0a6135;
+    }
+
+    .option.option-wrong {
+      border-color: #e5a19b;
+      background: #fff2f1;
+      color: #7a231d;
+    }
+
+    .option.option-correct input {
+      accent-color: var(--ok);
+    }
+
+    .option.option-wrong input {
+      accent-color: var(--bad);
+    }
+
+    .option.option-readonly {
+      cursor: default;
+    }
+
+    .option.option-correct:hover {
+      border-color: #77cf95;
+      background: #edf9f1;
+    }
+
+    .option.option-wrong:hover {
+      border-color: #e5a19b;
+      background: #fff2f1;
     }
 
     .feedback {
@@ -541,6 +577,7 @@
       incompleteSubmitWarned: false,
       incompleteSubmitWarnedAnsweredCount: 0
     };
+    const STORAGE_KEY = "quiz-practice-studio.session.v1";
 
     const fileInput = document.getElementById("fileInput");
     const shuffleToggle = document.getElementById("shuffleToggle");
@@ -603,6 +640,140 @@
       practiceMode.checked = state.mode === "practice";
     }
 
+    function clampNumber(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function isOptionLetter(value) {
+      return typeof value === "string" && /^[A-D]$/.test(value);
+    }
+
+    function sanitizeStoredItems(rawItems) {
+      if (!Array.isArray(rawItems)) return [];
+
+      const items = [];
+      for (const rawItem of rawItems) {
+        if (!rawItem || typeof rawItem !== "object") continue;
+
+        const id = Number(rawItem.id);
+        const text = String(rawItem.text || "").trim();
+        const answer = String(rawItem.answer || "").toUpperCase();
+        if (!Number.isFinite(id) || !text || !isOptionLetter(answer)) continue;
+
+        const rawOptions = rawItem.options && typeof rawItem.options === "object"
+          ? rawItem.options
+          : {};
+        const options = {};
+        for (const key of ["A", "B", "C", "D"]) {
+          if (typeof rawOptions[key] === "string" && rawOptions[key].trim()) {
+            options[key] = rawOptions[key].trim();
+          }
+        }
+
+        if (Object.keys(options).length < 2 || !Object.prototype.hasOwnProperty.call(options, answer)) {
+          continue;
+        }
+
+        items.push({
+          id,
+          text,
+          options,
+          answer
+        });
+      }
+
+      return items;
+    }
+
+    function saveSession() {
+      try {
+        if (state.items.length === 0) {
+          localStorage.removeItem(STORAGE_KEY);
+          return;
+        }
+
+        const payload = {
+          mode: state.mode,
+          items: state.items,
+          currentIndex: state.currentIndex,
+          responses: Array.from(state.responses.entries()),
+          locked: Array.from(state.locked),
+          submitted: state.submitted,
+          shuffle: shuffleToggle.checked,
+          view: resultCard.classList.contains("hidden") ? "quiz" : "result"
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (_error) {
+      }
+    }
+
+    function restoreSession() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+
+        const payload = JSON.parse(raw);
+        if (!payload || typeof payload !== "object") return false;
+
+        const items = sanitizeStoredItems(payload.items);
+        if (items.length === 0) return false;
+
+        state.mode = payload.mode === "practice" ? "practice" : "exam";
+        syncModeSelectionUI();
+        shuffleToggle.checked = Boolean(payload.shuffle);
+
+        state.items = items;
+        state.currentIndex = clampNumber(
+          Number.isInteger(payload.currentIndex) ? payload.currentIndex : 0,
+          0,
+          items.length - 1
+        );
+
+        const itemIds = new Set(items.map(item => item.id));
+        state.responses = new Map();
+        if (Array.isArray(payload.responses)) {
+          for (const pair of payload.responses) {
+            if (!Array.isArray(pair) || pair.length < 2) continue;
+            const id = Number(pair[0]);
+            const option = String(pair[1] || "").toUpperCase();
+            if (!itemIds.has(id) || !isOptionLetter(option)) continue;
+            state.responses.set(id, option);
+          }
+        }
+
+        state.locked = new Set();
+        if (state.mode === "practice" && Array.isArray(payload.locked)) {
+          for (const rawId of payload.locked) {
+            const id = Number(rawId);
+            if (!itemIds.has(id) || !state.responses.has(id)) continue;
+            state.locked.add(id);
+          }
+        }
+
+        state.submitted = state.mode === "exam" ? Boolean(payload.submitted) : false;
+        state.incompleteSubmitWarned = false;
+        state.incompleteSubmitWarnedAnsweredCount = 0;
+
+        hideIncompleteSubmitModal();
+        hideModeSwitchModal();
+        hideFeedback();
+        renderStats();
+        renderQuestion();
+        renderResult();
+
+        if (payload.view === "result" && (isPracticeMode() || state.submitted)) {
+          showResultView();
+        } else {
+          showQuizView();
+        }
+
+        showUploadAlert("已恢復上次練習進度。", false);
+        return true;
+      } catch (_error) {
+        return false;
+      }
+    }
+
     function resetRunStateAfterModeSwitch() {
       state.responses = new Map();
       state.locked = new Set();
@@ -617,6 +788,7 @@
       renderQuestion();
       renderResult();
       showQuizView();
+      saveSession();
 
       showUploadAlert(`已切換為 ${modeLabel(state.mode)}，已重置本次作答。`, false);
     }
@@ -637,6 +809,7 @@
       if (state.items.length === 0) {
         state.mode = nextMode;
         syncModeSelectionUI();
+        saveSession();
         return;
       }
       showModeSwitchModal(nextMode);
@@ -705,6 +878,7 @@
 
       renderStats();
       renderQuestion();
+      saveSession();
     });
 
     viewResultBtn.addEventListener("click", () => {
@@ -722,6 +896,7 @@
         state.currentIndex -= 1;
         hideFeedback();
         renderQuestion();
+        saveSession();
       }
     });
 
@@ -730,6 +905,7 @@
         state.currentIndex += 1;
         hideFeedback();
         renderQuestion();
+        saveSession();
       }
     });
 
@@ -764,6 +940,7 @@
         }
         renderStats();
         renderQuestion();
+        saveSession();
 
         const firstUnansweredId = unanswered[0]?.id ?? "-";
         showFeedback(`第 ${firstUnansweredId} 題未作答。`, "bad");
@@ -785,6 +962,7 @@
       hideFeedback();
       renderStats();
       renderQuestion();
+      saveSession();
     });
 
     resetBtn.addEventListener("click", () => {
@@ -802,6 +980,7 @@
       renderQuestion();
       renderResult();
       showQuizView();
+      saveSession();
     });
 
     confirmSubmitAnywayBtn.addEventListener("click", () => {
@@ -874,6 +1053,7 @@
         renderResult();
 
         showQuizView();
+        saveSession();
         const modeLabel = isExamMode() ? "考試版" : "練習版";
         showUploadAlert(`題庫載入成功：共 ${state.items.length} 題（${modeLabel}）。`, false);
       } catch (error) {
@@ -1029,6 +1209,7 @@
 
       const selected = state.responses.get(item.id) || "";
       const isPracticeLocked = isPracticeMode() && state.locked.has(item.id);
+      const revealAnswer = isExamMode() ? state.submitted : isPracticeLocked;
       const optionKeys = Object.keys(item.options).sort();
 
       for (const key of optionKeys) {
@@ -1044,6 +1225,15 @@
 
         const text = document.createElement("div");
         text.textContent = `(${key}) ${item.options[key]}`;
+
+        if (revealAnswer) {
+          label.classList.add("option-readonly");
+          if (key === item.answer) {
+            label.classList.add("option-correct");
+          } else if (selected && selected !== item.answer && key === selected) {
+            label.classList.add("option-wrong");
+          }
+        }
 
         label.appendChild(input);
         label.appendChild(text);
@@ -1183,12 +1373,14 @@
     function showQuizView() {
       quizCard.classList.remove("hidden");
       resultCard.classList.add("hidden");
+      saveSession();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function showResultView() {
       resultCard.classList.remove("hidden");
       quizCard.classList.add("hidden");
+      saveSession();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -1207,6 +1399,7 @@
       renderStats();
       renderResult();
       renderQuestion();
+      saveSession();
     }
 
     function showIncompleteSubmitModal(unansweredCount) {
@@ -1256,6 +1449,10 @@
       feedback.textContent = "";
       feedback.classList.remove("info", "good", "bad");
     }
+    if (!restoreSession()) {
+      syncModeSelectionUI();
+    }
   </script>
 </body>
 </html>
+
