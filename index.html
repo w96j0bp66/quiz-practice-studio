@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz Practice Studio</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --text: #1f2430;
+      --muted: #596176;
+      --border: #dfe3ee;
+      --primary: #0058d9;
+      --primary-soft: #e8f1ff;
+      --ok: #0f8b47;
+      --ok-soft: #e9f8ee;
+      --bad: #b8332a;
+      --bad-soft: #fff1f0;
+      --warning: #996e00;
+      --shadow: 0 10px 28px rgba(31, 36, 48, 0.08);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% -10%, #d8ebff 0%, transparent 50%),
+        radial-gradient(circle at 100% 0%, #ffe9d2 0%, transparent 45%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(980px, 94vw);
+      margin: 28px auto 40px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+      letter-spacing: 0.2px;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .upload-wrap {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .mode-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .mode-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #c9d5ef;
+      border-radius: 999px;
+      background: #f7f9ff;
+      padding: 6px 10px;
+      color: #27406f;
+      font-size: 0.9rem;
+    }
+
+    .file-input {
+      width: 100%;
+      border: 1px dashed #9eb5db;
+      border-radius: 12px;
+      padding: 12px;
+      background: #f9fbff;
+      color: var(--muted);
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      user-select: none;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(0, 88, 217, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f7f9ff;
+      border-color: #c9d5ef;
+      color: #27406f;
+    }
+
+    .alert {
+      margin-top: 10px;
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid;
+      display: none;
+      font-size: 0.94rem;
+    }
+
+    .alert.error {
+      background: var(--bad-soft);
+      color: #6b1f1c;
+      border-color: #efc2bf;
+    }
+
+    .alert.ok {
+      background: var(--ok-soft);
+      color: #0b5730;
+      border-color: #bfe6ca;
+    }
+
+    .meta-grid {
+      margin-top: 6px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+
+    .meta {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fcfdff;
+    }
+
+    .meta .label {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .meta .value {
+      margin-top: 4px;
+      font-weight: 700;
+      font-size: 1.08rem;
+    }
+
+    .progress-box {
+      margin-top: 10px;
+    }
+
+    progress {
+      width: 100%;
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 0;
+    }
+
+    progress::-webkit-progress-bar {
+      background: #e8edf8;
+      border-radius: 999px;
+    }
+
+    progress::-webkit-progress-value {
+      background: linear-gradient(90deg, #2d7cf8, #0058d9);
+      border-radius: 999px;
+    }
+
+    .question {
+      margin-top: 12px;
+      padding: 14px;
+      background: #fbfcff;
+      border: 1px solid #dbe3f5;
+      border-radius: 12px;
+      line-height: 1.6;
+      font-weight: 600;
+    }
+
+    .option-list {
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .option {
+      border: 1px solid #d9deeb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .option:hover {
+      background: #f8fbff;
+      border-color: #b4c8ef;
+    }
+
+    .option input {
+      margin-top: 2px;
+    }
+
+    .feedback {
+      margin: 0;
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #d7deed;
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: block;
+      visibility: hidden;
+      line-height: 1.4;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: #fff;
+      color: #2b3f68;
+    }
+
+    .feedback.info {
+      background: #fff;
+      border-color: #d7deed;
+      color: #2b3f68;
+    }
+
+    .feedback.good {
+      background: #fff;
+      border-color: #bfe6ca;
+      color: #0a6135;
+    }
+
+    .feedback.bad {
+      background: #fff;
+      border-color: #efc2bf;
+      color: #70231e;
+    }
+
+    .control-row {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: auto minmax(220px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .left-actions {
+      grid-column: 1;
+    }
+
+    .center-feedback {
+      grid-column: 2;
+    }
+
+    .right-actions {
+      grid-column: 3;
+      justify-self: end;
+    }
+
+    @media (max-width: 900px) {
+      .control-row {
+        grid-template-columns: 1fr;
+      }
+
+      .control-group {
+        flex-wrap: wrap;
+      }
+
+      .left-actions,
+      .center-feedback,
+      .right-actions {
+        grid-column: auto;
+        justify-self: stretch;
+      }
+    }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.92rem;
+    }
+
+    .result-table th,
+    .result-table td {
+      border: 1px solid #e0e5f1;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .result-table th {
+      background: #f4f7ff;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .pill.ok {
+      color: #0c6c3a;
+      background: #daf3e4;
+    }
+
+    .pill.bad {
+      color: #7a2a24;
+      background: #ffdeda;
+    }
+
+    .pill.pending {
+      color: #5a6378;
+      background: #edf1f8;
+    }
+
+    .jump-btn {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 26, 45, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 999;
+    }
+
+    .modal {
+      width: min(460px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .modal-text {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Quiz Practice Studio</h1>
+      <p>上傳 Markdown 題庫，系統會驗證題目與答案，再用線上練習模式讓你作答。</p>
+      <div class="upload-wrap">
+        <input id="fileInput" class="file-input" type="file" accept=".md,.txt">
+        <label class="row">
+          <input id="shuffleToggle" type="checkbox">
+          <span>隨機題目順序</span>
+        </label>
+        <div class="mode-row">
+          <label class="mode-chip">
+            <input id="examMode" type="radio" name="quizMode" checked>
+            <span>考試版（全部提交）</span>
+          </label>
+          <label class="mode-chip">
+            <input id="practiceMode" type="radio" name="quizMode">
+            <span>練習版（逐題提交）</span>
+          </label>
+        </div>
+        <div class="row">
+          <button id="startBtn" class="btn btn-primary">載入並開始練習</button>
+          <div class="spacer"></div>
+        </div>
+      </div>
+      <div id="uploadAlert" class="alert"></div>
+    </section>
+
+    <section id="quizCard" class="card hidden">
+      <div class="meta-grid">
+        <div class="meta">
+          <div class="label">總題數</div>
+          <div id="totalCount" class="value">0</div>
+        </div>
+        <div class="meta">
+          <div class="label">已作答</div>
+          <div id="answeredCount" class="value">0</div>
+        </div>
+        <div class="meta">
+          <div class="label">正確率</div>
+          <div id="accuracy" class="value">0%</div>
+        </div>
+        <div class="meta">
+          <div class="label">目前題號</div>
+          <div id="currentOrderLabel" class="value">-</div>
+        </div>
+      </div>
+
+      <div class="progress-box">
+        <progress id="progressBar" value="0" max="100"></progress>
+      </div>
+
+      <div id="questionText" class="question"></div>
+      <div id="optionList" class="option-list"></div>
+
+      <div class="control-row">
+        <div class="control-group left-actions">
+          <button id="prevBtn" class="btn btn-secondary">上一題</button>
+          <button id="nextBtn" class="btn btn-secondary">下一題</button>
+        </div>
+
+        <div id="feedback" class="feedback center-feedback"></div>
+
+        <div class="control-group right-actions">
+          <button id="submitBtn" class="btn btn-primary">提交答案</button>
+          <button id="retryBtn" class="btn btn-secondary">重做此題</button>
+          <button id="viewResultBtn" class="btn btn-secondary">查看作答總覽</button>
+          <button id="resetBtn" class="btn btn-secondary">重新開始</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultCard" class="card hidden">
+      <div class="row">
+        <h2 style="margin:0;">作答總覽</h2>
+        <div class="spacer"></div>
+        <button id="backToQuizBtn" class="btn btn-secondary">返回作答</button>
+      </div>
+      <p id="resultSummary" style="margin-top:6px;"></p>
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th>題號</th>
+            <th>你的答案</th>
+            <th>正確答案</th>
+            <th>結果</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="incompleteSubmitModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="incompleteSubmitTitle">
+    <div class="modal">
+      <h3 id="incompleteSubmitTitle" class="modal-title">確認提交</h3>
+      <p id="incompleteSubmitText" class="modal-text">你還有題目未作答，確定要提交嗎？</p>
+      <div class="row" style="justify-content: flex-end;">
+        <button id="cancelSubmitAnywayBtn" type="button" class="btn btn-secondary">返回作答</button>
+        <button id="confirmSubmitAnywayBtn" type="button" class="btn btn-primary">確認提交</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modeSwitchModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modeSwitchTitle">
+    <div class="modal">
+      <h3 id="modeSwitchTitle" class="modal-title">切換模式</h3>
+      <p id="modeSwitchText" class="modal-text">切換模式會重置目前作答，是否繼續？</p>
+      <div class="row" style="justify-content: flex-end;">
+        <button id="cancelModeSwitchBtn" type="button" class="btn btn-secondary">取消</button>
+        <button id="confirmModeSwitchBtn" type="button" class="btn btn-primary">確認切換</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      mode: "exam",
+      pendingMode: null,
+      items: [],
+      currentIndex: 0,
+      responses: new Map(),
+      locked: new Set(),
+      submitted: false,
+      incompleteSubmitWarned: false,
+      incompleteSubmitWarnedAnsweredCount: 0
+    };
+
+    const fileInput = document.getElementById("fileInput");
+    const shuffleToggle = document.getElementById("shuffleToggle");
+    const examMode = document.getElementById("examMode");
+    const practiceMode = document.getElementById("practiceMode");
+    const startBtn = document.getElementById("startBtn");
+    const uploadAlert = document.getElementById("uploadAlert");
+
+    const quizCard = document.getElementById("quizCard");
+    const resultCard = document.getElementById("resultCard");
+    const totalCount = document.getElementById("totalCount");
+    const answeredCount = document.getElementById("answeredCount");
+    const accuracy = document.getElementById("accuracy");
+    const currentOrderLabel = document.getElementById("currentOrderLabel");
+    const progressBar = document.getElementById("progressBar");
+
+    const questionText = document.getElementById("questionText");
+    const optionList = document.getElementById("optionList");
+    const feedback = document.getElementById("feedback");
+
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const viewResultBtn = document.getElementById("viewResultBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const backToQuizBtn = document.getElementById("backToQuizBtn");
+
+    const resultSummary = document.getElementById("resultSummary");
+    const resultBody = document.getElementById("resultBody");
+    const incompleteSubmitModal = document.getElementById("incompleteSubmitModal");
+    const incompleteSubmitText = document.getElementById("incompleteSubmitText");
+    const confirmSubmitAnywayBtn = document.getElementById("confirmSubmitAnywayBtn");
+    const cancelSubmitAnywayBtn = document.getElementById("cancelSubmitAnywayBtn");
+    const modeSwitchModal = document.getElementById("modeSwitchModal");
+    const modeSwitchText = document.getElementById("modeSwitchText");
+    const confirmModeSwitchBtn = document.getElementById("confirmModeSwitchBtn");
+    const cancelModeSwitchBtn = document.getElementById("cancelModeSwitchBtn");
+
+    viewResultBtn.classList.add("hidden");
+
+    function isExamMode() {
+      return state.mode === "exam";
+    }
+
+    function isPracticeMode() {
+      return state.mode === "practice";
+    }
+
+    function getSelectedMode() {
+      return practiceMode.checked ? "practice" : "exam";
+    }
+
+    function modeLabel(mode) {
+      return mode === "practice" ? "練習版" : "考試版";
+    }
+
+    function syncModeSelectionUI() {
+      examMode.checked = state.mode === "exam";
+      practiceMode.checked = state.mode === "practice";
+    }
+
+    function resetRunStateAfterModeSwitch() {
+      state.responses = new Map();
+      state.locked = new Set();
+      state.submitted = false;
+      state.incompleteSubmitWarned = false;
+      state.incompleteSubmitWarnedAnsweredCount = 0;
+      state.currentIndex = 0;
+
+      hideIncompleteSubmitModal();
+      hideFeedback();
+      renderStats();
+      renderQuestion();
+      renderResult();
+      showQuizView();
+
+      showUploadAlert(`已切換為 ${modeLabel(state.mode)}，已重置本次作答。`, false);
+    }
+
+    function showModeSwitchModal(nextMode) {
+      state.pendingMode = nextMode;
+      modeSwitchText.textContent = `切換到${modeLabel(nextMode)}會重置目前作答，是否繼續？`;
+      modeSwitchModal.classList.remove("hidden");
+    }
+
+    function hideModeSwitchModal() {
+      modeSwitchModal.classList.add("hidden");
+      state.pendingMode = null;
+    }
+
+    function requestModeSwitch(nextMode) {
+      if (nextMode === state.mode) return;
+      if (state.items.length === 0) {
+        state.mode = nextMode;
+        syncModeSelectionUI();
+        return;
+      }
+      showModeSwitchModal(nextMode);
+    }
+
+    examMode.addEventListener("change", () => {
+      if (!examMode.checked) return;
+      requestModeSwitch("exam");
+    });
+
+    practiceMode.addEventListener("change", () => {
+      if (!practiceMode.checked) return;
+      requestModeSwitch("practice");
+    });
+
+    confirmModeSwitchBtn.addEventListener("click", () => {
+      if (!state.pendingMode) {
+        hideModeSwitchModal();
+        return;
+      }
+      state.mode = state.pendingMode;
+      syncModeSelectionUI();
+      hideModeSwitchModal();
+      resetRunStateAfterModeSwitch();
+    });
+
+    cancelModeSwitchBtn.addEventListener("click", () => {
+      syncModeSelectionUI();
+      hideModeSwitchModal();
+    });
+
+    startBtn.addEventListener("click", async () => {
+      clearUploadAlert();
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showUploadAlert("請先選擇題庫檔案（.md 或 .txt）。", true);
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const text = await readTextWithFallback(file);
+      initializeQuizFromText(text);
+    });
+
+    optionList.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.name !== "option") return;
+
+      const current = state.items[state.currentIndex];
+      if (!current) return;
+
+      if ((isExamMode() && state.submitted) || (isPracticeMode() && state.locked.has(current.id))) {
+        return;
+      }
+
+      state.responses.set(current.id, target.value);
+      hideFeedback();
+
+      if (isExamMode()) {
+        const answeredNow = state.responses.size;
+        if (state.incompleteSubmitWarned && answeredNow > state.incompleteSubmitWarnedAnsweredCount) {
+          state.incompleteSubmitWarned = false;
+          state.incompleteSubmitWarnedAnsweredCount = 0;
+        }
+      }
+
+      renderStats();
+      renderQuestion();
+    });
+
+    viewResultBtn.addEventListener("click", () => {
+      if (isExamMode() && !state.submitted) return;
+      renderResult();
+      showResultView();
+    });
+
+    backToQuizBtn.addEventListener("click", () => {
+      showQuizView();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (state.currentIndex > 0) {
+        state.currentIndex -= 1;
+        hideFeedback();
+        renderQuestion();
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (state.currentIndex < state.items.length - 1) {
+        state.currentIndex += 1;
+        hideFeedback();
+        renderQuestion();
+      }
+    });
+
+    submitBtn.addEventListener("click", () => {
+      if (state.items.length === 0) return;
+      if (isPracticeMode()) {
+        submitPracticeCurrent();
+        return;
+      }
+      if (state.submitted) return;
+
+      const unanswered = state.items.filter(item => !state.responses.has(item.id));
+      if (unanswered.length > 0) {
+        const answeredNow = state.responses.size;
+
+        if (state.incompleteSubmitWarned) {
+          const hasNewAnswerAfterWarning = answeredNow > state.incompleteSubmitWarnedAnsweredCount;
+          if (!hasNewAnswerAfterWarning) {
+            showIncompleteSubmitModal(unanswered.length);
+            return;
+          }
+
+          state.incompleteSubmitWarned = false;
+          state.incompleteSubmitWarnedAnsweredCount = 0;
+        }
+
+        state.incompleteSubmitWarned = true;
+        state.incompleteSubmitWarnedAnsweredCount = answeredNow;
+        const firstUnansweredIndex = state.items.findIndex(item => !state.responses.has(item.id));
+        if (firstUnansweredIndex >= 0) {
+          state.currentIndex = firstUnansweredIndex;
+        }
+        renderStats();
+        renderQuestion();
+
+        const firstUnansweredId = unanswered[0]?.id ?? "-";
+        showFeedback(`第 ${firstUnansweredId} 題未作答。`, "bad");
+        return;
+      }
+
+      finalizeSubmission();
+    });
+
+    retryBtn.addEventListener("click", () => {
+      if (isExamMode() && state.submitted) {
+        return;
+      }
+
+      const current = state.items[state.currentIndex];
+      if (!current) return;
+      state.responses.delete(current.id);
+      state.locked.delete(current.id);
+      hideFeedback();
+      renderStats();
+      renderQuestion();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      if (state.items.length === 0) return;
+      state.responses = new Map();
+      state.locked = new Set();
+      state.submitted = false;
+      state.incompleteSubmitWarned = false;
+      state.incompleteSubmitWarnedAnsweredCount = 0;
+      state.currentIndex = 0;
+      hideIncompleteSubmitModal();
+      hideModeSwitchModal();
+      hideFeedback();
+      renderStats();
+      renderQuestion();
+      renderResult();
+      showQuizView();
+    });
+
+    confirmSubmitAnywayBtn.addEventListener("click", () => {
+      finalizeSubmission();
+    });
+
+    cancelSubmitAnywayBtn.addEventListener("click", () => {
+      hideIncompleteSubmitModal();
+    });
+
+    resultBody.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const jumpButton = target.closest("[data-question-id]");
+      if (!jumpButton) return;
+
+      const questionId = Number(jumpButton.getAttribute("data-question-id"));
+      if (!Number.isFinite(questionId)) return;
+
+      const targetIndex = state.items.findIndex(item => item.id === questionId);
+      if (targetIndex < 0) return;
+
+      state.currentIndex = targetIndex;
+      renderQuestion();
+      showQuizView();
+    });
+
+    async function readTextWithFallback(file) {
+      const buffer = await file.arrayBuffer();
+      const encodings = ["utf-8", "big5", "gb18030", "utf-16le"];
+      let bestText = "";
+      let bestReplacement = Number.MAX_SAFE_INTEGER;
+
+      for (const encoding of encodings) {
+        try {
+          const text = new TextDecoder(encoding).decode(buffer);
+          const replacementCount = (text.match(/\uFFFD/g) || []).length;
+          if (replacementCount < bestReplacement) {
+            bestText = text;
+            bestReplacement = replacementCount;
+          }
+          if (replacementCount === 0) break;
+        } catch (_error) {
+        }
+      }
+
+      if (!bestText) {
+        bestText = new TextDecoder().decode(buffer);
+      }
+      return bestText;
+    }
+
+    function initializeQuizFromText(text) {
+      try {
+        state.mode = getSelectedMode();
+        const items = parseQuizContent(text);
+        state.items = shuffleToggle.checked ? shuffleArray(items) : items;
+        state.currentIndex = 0;
+        state.responses = new Map();
+        state.locked = new Set();
+        state.submitted = false;
+        state.incompleteSubmitWarned = false;
+        state.incompleteSubmitWarnedAnsweredCount = 0;
+        hideIncompleteSubmitModal();
+        hideModeSwitchModal();
+
+        hideFeedback();
+        renderStats();
+        renderQuestion();
+        renderResult();
+
+        showQuizView();
+        const modeLabel = isExamMode() ? "考試版" : "練習版";
+        showUploadAlert(`題庫載入成功：共 ${state.items.length} 題（${modeLabel}）。`, false);
+      } catch (error) {
+        showUploadAlert(error.message || "題庫解析失敗，請確認格式。", true);
+      }
+    }
+
+    function parseQuizContent(text) {
+      const questions = parseQuestions(text);
+      if (questions.length === 0) {
+        throw new Error("找不到題目。請確認格式類似：**1.** 題目文字 + 選項 - (A) ...");
+      }
+
+      const answers = parseAnswers(text);
+      if (answers.size === 0) {
+        throw new Error("找不到答案。請在檔案中提供答案區（如表格或 1. B 這種格式）。");
+      }
+
+      const missingAnswer = [];
+      const invalidAnswer = [];
+      const result = [];
+
+      for (const question of questions) {
+        if (!answers.has(question.id)) {
+          missingAnswer.push(question.id);
+          continue;
+        }
+
+        const answer = answers.get(question.id);
+        if (!Object.prototype.hasOwnProperty.call(question.options, answer)) {
+          invalidAnswer.push(question.id);
+          continue;
+        }
+
+        result.push({
+          id: question.id,
+          text: question.text,
+          options: question.options,
+          answer
+        });
+      }
+
+      if (missingAnswer.length > 0) {
+        const show = missingAnswer.slice(0, 12).join(", ");
+        throw new Error(`以下題號缺少答案：${show}${missingAnswer.length > 12 ? "..." : ""}`);
+      }
+      if (invalidAnswer.length > 0) {
+        const show = invalidAnswer.slice(0, 12).join(", ");
+        throw new Error(`以下題號答案不在選項中：${show}${invalidAnswer.length > 12 ? "..." : ""}`);
+      }
+      if (result.length === 0) {
+        throw new Error("題目都未通過驗證。請確認題目、選項、答案格式。");
+      }
+
+      return result.sort((a, b) => a.id - b.id);
+    }
+
+    function parseQuestions(text) {
+      const lines = text.split(/\r?\n/);
+      const questions = [];
+      let current = null;
+      let currentOption = "";
+
+      const pushCurrent = () => {
+        if (!current) return;
+        const optionKeys = Object.keys(current.options);
+        if (optionKeys.length >= 2) {
+          current.text = current.text.trim();
+          for (const key of optionKeys) {
+            current.options[key] = current.options[key].trim();
+          }
+          questions.push(current);
+        }
+      };
+
+      for (const rawLine of lines) {
+        const line = rawLine.replace(/\t/g, "    ");
+        const questionMatch = line.match(/^\s*\*\*(\d+)\.\*\*\s*(.+?)\s*$/) || line.match(/^\s*(\d+)\.\s+(.+?)\s*$/);
+
+        if (questionMatch) {
+          pushCurrent();
+          current = {
+            id: Number(questionMatch[1]),
+            text: questionMatch[2].trim(),
+            options: {}
+          };
+          currentOption = "";
+          continue;
+        }
+
+        if (!current) continue;
+
+        const optionMatch = line.match(/^\s*[-*]?\s*\(([A-Da-d])\)\s*(.+?)\s*$/);
+        if (optionMatch) {
+          currentOption = optionMatch[1].toUpperCase();
+          current.options[currentOption] = optionMatch[2].trim();
+          continue;
+        }
+
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        if (currentOption && !trimmed.startsWith("|") && !trimmed.startsWith("#") && !trimmed.startsWith("---")) {
+          current.options[currentOption] += " " + trimmed;
+          continue;
+        }
+
+        if (Object.keys(current.options).length === 0 && !trimmed.startsWith("#") && !trimmed.startsWith("---")) {
+          current.text += " " + trimmed;
+        }
+      }
+
+      pushCurrent();
+      return questions;
+    }
+
+    function parseAnswers(text) {
+      const lines = text.split(/\r?\n/);
+      const answerMap = new Map();
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+
+        if (trimmed.startsWith("|") && trimmed.includes("|")) {
+          if (/^\|?\s*[:-]+/.test(trimmed)) continue;
+          const cells = trimmed.split("|").map(cell => cell.trim()).filter(Boolean);
+          for (let i = 0; i + 1 < cells.length; i += 2) {
+            const q = cells[i];
+            const a = (cells[i + 1] || "").toUpperCase();
+            if (/^\d+$/.test(q) && /^[A-D]$/.test(a)) {
+              answerMap.set(Number(q), a);
+            }
+          }
+          continue;
+        }
+
+        const pairMatch = trimmed.match(/^\s*(\d+)\s*[\.\):|-]\s*([A-Da-d])\s*$/) || trimmed.match(/^\s*(\d+)\s+([A-Da-d])\s*$/);
+        if (pairMatch) {
+          answerMap.set(Number(pairMatch[1]), pairMatch[2].toUpperCase());
+        }
+      }
+
+      return answerMap;
+    }
+
+    function renderQuestion() {
+      const item = state.items[state.currentIndex];
+      if (!item) return;
+
+      currentOrderLabel.textContent = `${state.currentIndex + 1} / ${state.items.length}`;
+      questionText.textContent = `Q${item.id}. ${item.text}`;
+      optionList.innerHTML = "";
+
+      const selected = state.responses.get(item.id) || "";
+      const isPracticeLocked = isPracticeMode() && state.locked.has(item.id);
+      const optionKeys = Object.keys(item.options).sort();
+
+      for (const key of optionKeys) {
+        const label = document.createElement("label");
+        label.className = "option";
+
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = "option";
+        input.value = key;
+        input.disabled = state.submitted || isPracticeLocked;
+        input.checked = selected === key;
+
+        const text = document.createElement("div");
+        text.textContent = `(${key}) ${item.options[key]}`;
+
+        label.appendChild(input);
+        label.appendChild(text);
+        optionList.appendChild(label);
+      }
+
+      prevBtn.disabled = state.currentIndex === 0;
+      nextBtn.disabled = state.currentIndex === state.items.length - 1;
+      submitBtn.textContent = isPracticeMode() ? "提交本題" : "提交答案";
+      submitBtn.disabled = state.items.length === 0 || (isExamMode() ? state.submitted : isPracticeLocked);
+      retryBtn.disabled = (isExamMode() && state.submitted) || !selected;
+      viewResultBtn.classList.toggle("hidden", isExamMode() ? !state.submitted : false);
+
+      if (isExamMode() && state.submitted) {
+        if (!selected) {
+          showFeedback(`已提交：本題未作答，正確答案是 (${item.answer})。`, "bad");
+          return;
+        }
+
+        const isCorrect = selected === item.answer;
+        showFeedback(
+          isCorrect
+            ? `已提交：你選 (${selected})，答對。`
+            : `已提交：你選 (${selected})，正確答案是 (${item.answer})。`,
+          isCorrect ? "good" : "bad"
+        );
+        return;
+      }
+
+      if (isPracticeMode() && isPracticeLocked) {
+        const isCorrect = selected === item.answer;
+        showFeedback(
+          isCorrect
+            ? `本題已提交：你選 (${selected})，答對。`
+            : `本題已提交：你選 (${selected})，正確答案是 (${item.answer})。`,
+          isCorrect ? "good" : "bad"
+        );
+        return;
+      }
+
+      if (selected) {
+        showFeedback(
+          isPracticeMode()
+            ? `已選擇 (${selected})，按「提交本題」查看答案。`
+            : `已暫存本題答案 (${selected})，你可以繼續下一題。`,
+          "info"
+        );
+      } else {
+        hideFeedback();
+      }
+    }
+
+    function renderStats() {
+      const total = state.items.length;
+      const answered = isPracticeMode() ? state.locked.size : state.responses.size;
+      let correct = 0;
+
+      if (isPracticeMode()) {
+        for (const item of state.items) {
+          if (state.locked.has(item.id) && state.responses.get(item.id) === item.answer) {
+            correct += 1;
+          }
+        }
+      } else if (state.submitted) {
+        for (const item of state.items) {
+          if (state.responses.get(item.id) === item.answer) {
+            correct += 1;
+          }
+        }
+      }
+
+      totalCount.textContent = String(total);
+      answeredCount.textContent = String(answered);
+      accuracy.textContent = isPracticeMode()
+        ? (answered === 0 ? "0%" : `${Math.round((correct / answered) * 100)}%`)
+        : (state.submitted && total > 0 ? `${Math.round((correct / total) * 100)}%` : "待提交");
+      progressBar.value = total === 0 ? 0 : Math.round((answered / total) * 100);
+    }
+
+    function renderResult() {
+      resultBody.innerHTML = "";
+      if (state.items.length === 0) return;
+
+      if (isExamMode() && !state.submitted) {
+        resultSummary.textContent = "完成所有題目後按「提交答案」，即可查看完整作答紀錄。";
+        return;
+      }
+
+      let correct = 0;
+      let answered = 0;
+      const sorted = [...state.items].sort((a, b) => a.id - b.id);
+
+      for (const item of sorted) {
+        const tr = document.createElement("tr");
+        const selected = state.responses.get(item.id) || "-";
+        const isDone = isPracticeMode() ? state.locked.has(item.id) : selected !== "-";
+        const ok = isDone && selected === item.answer;
+
+        if (isDone) answered += 1;
+        if (ok) correct += 1;
+
+        let statusHtml = '<span class="pill pending">未作答</span>';
+        if (isDone) {
+          statusHtml = ok ? '<span class="pill ok">正確</span>' : '<span class="pill bad">錯誤</span>';
+        } else if (isPracticeMode() && selected !== "-") {
+          statusHtml = '<span class="pill pending">已選未提交</span>';
+        }
+
+        tr.innerHTML = `
+          <td><button type="button" class="btn btn-secondary jump-btn" data-question-id="${item.id}">Q${item.id}</button></td>
+          <td>${selected}</td>
+          <td>${item.answer}</td>
+          <td>${statusHtml}</td>
+        `;
+        resultBody.appendChild(tr);
+      }
+
+      if (isPracticeMode()) {
+        const rate = answered === 0 ? 0 : Math.round((correct / answered) * 100);
+        resultSummary.textContent = `練習進度：已提交 ${answered}/${state.items.length} 題，答對 ${correct} 題，正確率 ${rate}%。點題號可快速跳轉回該題。`;
+        return;
+      }
+
+      const rate = state.items.length === 0 ? 0 : Math.round((correct / state.items.length) * 100);
+      resultSummary.textContent = `已提交 ${state.items.length}/${state.items.length} 題，答對 ${correct} 題，正確率 ${rate}%。點題號可快速跳轉回該題。`;
+    }
+
+    function shuffleArray(items) {
+      const arr = [...items];
+      for (let i = arr.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function showQuizView() {
+      quizCard.classList.remove("hidden");
+      resultCard.classList.add("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showResultView() {
+      resultCard.classList.remove("hidden");
+      quizCard.classList.add("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function submitPracticeCurrent() {
+      const item = state.items[state.currentIndex];
+      if (!item) return;
+      if (state.locked.has(item.id)) return;
+
+      const selected = state.responses.get(item.id) || "";
+      if (!selected) {
+        showFeedback("請先選擇答案，再提交本題。", "bad");
+        return;
+      }
+
+      state.locked.add(item.id);
+      renderStats();
+      renderResult();
+      renderQuestion();
+    }
+
+    function showIncompleteSubmitModal(unansweredCount) {
+      incompleteSubmitText.textContent = `你還有 ${unansweredCount} 題未作答，確定要提交嗎？未作答題目會視為錯誤。`;
+      incompleteSubmitModal.classList.remove("hidden");
+    }
+
+    function hideIncompleteSubmitModal() {
+      incompleteSubmitModal.classList.add("hidden");
+    }
+
+    function finalizeSubmission() {
+      hideIncompleteSubmitModal();
+      hideFeedback();
+      state.submitted = true;
+      state.incompleteSubmitWarned = false;
+      state.incompleteSubmitWarnedAnsweredCount = 0;
+      state.currentIndex = 0;
+      renderStats();
+      renderQuestion();
+      renderResult();
+      showQuizView();
+    }
+
+    function showUploadAlert(message, isError) {
+      uploadAlert.textContent = message;
+      uploadAlert.classList.remove("error", "ok");
+      uploadAlert.classList.add(isError ? "error" : "ok");
+      uploadAlert.style.display = "block";
+    }
+
+    function clearUploadAlert() {
+      uploadAlert.style.display = "none";
+      uploadAlert.textContent = "";
+      uploadAlert.classList.remove("error", "ok");
+    }
+
+    function showFeedback(message, type = "info") {
+      feedback.textContent = message;
+      feedback.style.visibility = "visible";
+      feedback.classList.remove("info", "good", "bad");
+      feedback.classList.add(type);
+    }
+
+    function hideFeedback() {
+      feedback.style.visibility = "hidden";
+      feedback.textContent = "";
+      feedback.classList.remove("info", "good", "bad");
+    }
+  </script>
+</body>
+</html>
